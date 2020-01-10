@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebCore", "WebCore\WebCore.csproj", "{10EDD512-84FB-4410-8F45-114B8A220DE6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebCore.Wke", "WebCore.Wke\WebCore.Wke.csproj", "{8F89125A-73F5-4246-85BF-1C6317F1E32E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{10EDD512-84FB-4410-8F45-114B8A220DE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10EDD512-84FB-4410-8F45-114B8A220DE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10EDD512-84FB-4410-8F45-114B8A220DE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F89125A-73F5-4246-85BF-1C6317F1E32E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F89125A-73F5-4246-85BF-1C6317F1E32E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F89125A-73F5-4246-85BF-1C6317F1E32E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F89125A-73F5-4246-85BF-1C6317F1E32E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
