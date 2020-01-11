@@ -13,6 +13,70 @@ namespace WebCore.Wke
         WKE_WINDOW_TYPE_CONTROL
     }
 
+    public enum wkeProxyType
+    {
+        WKE_PROXY_NONE,
+        WKE_PROXY_HTTP,
+        WKE_PROXY_SOCKS4,
+        WKE_PROXY_SOCKS4A,
+        WKE_PROXY_SOCKS5,
+        WKE_PROXY_SOCKS5HOSTNAME
+
+    }
+
+
+    public enum wkeMouseFlags
+    {
+        WKE_LBUTTON = 0x01,
+        WKE_RBUTTON = 0x02,
+        WKE_SHIFT = 0x04,
+        WKE_CONTROL = 0x08,
+        WKE_MBUTTON = 0x10,
+
+    }
+
+    public enum wkeKeyFlags
+    {
+        WKE_EXTENDED = 0x0100,
+        WKE_REPEAT = 0x4000
+    }
+
+    public struct wkeRect
+    {
+        public int x;
+        public int y;
+        public int w;
+        public int h;
+    }
+
+    public struct wkeProxy
+    {
+        public wkeProxyType type;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 100)]
+        public char[] hostname;
+        public ushort port;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 50)]
+        public char[] username;
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst =50)]
+        public char[] password;
+    }
+    ;
+
+    enum wkeSettingMask
+    {
+        WKE_SETTING_PROXY = 1,
+        WKE_SETTING_COOKIE_FILE_PATH = 1 << 1
+    };
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct wkeSettings
+    {
+        public wkeProxy proxy;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1024)]
+        public char[] cookieFilePath;
+        public uint mask;
+    };
+
     public struct BITMAPFILEHEADER
     {
         public short bfType;
@@ -54,6 +118,16 @@ namespace WebCore.Wke
 
     public static class WkeApi
     {
+        public const int KF_EXTENDED = 0x0100;
+        public const int KF_DLGMODE = 0x0800;
+        public const int KF_MENUMODE = 0x1000;
+        public const int KF_ALTDOWN = 0x2000;
+        public const int KF_REPEAT = 0x4000;
+        public const int KF_UP = 0x8000;
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeConfigure(IntPtr settings);
+
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern void wkeInitialize();
 
@@ -241,5 +315,36 @@ namespace WebCore.Wke
 
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern long wkeRunJS(IntPtr webView, string script);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeSetCookieEnabled(IntPtr webView,bool enable);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeSetFocus(IntPtr webView);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeKillFocus(IntPtr webView);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern bool wkeFireMouseEvent(IntPtr webView, uint message, int x, int y, uint flags);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern bool wkeFireContextMenuEvent(IntPtr webView, int x, int y, uint flags);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern bool wkeFireMouseWheelEvent(IntPtr webView, int x, int y, int delta, uint flags);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern bool wkeFireKeyUpEvent(IntPtr webView, uint virtualKeyCode, uint flags, bool systemKey);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern bool wkeFireKeyDownEvent(IntPtr webView,  uint virtualKeyCode, uint flags, bool systemKey);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern bool wkeFireKeyPressEvent(IntPtr webView,  uint charCode, uint flags, bool systemKey);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern wkeRect wkeGetCaretRect(IntPtr webView);
+
     }
 }

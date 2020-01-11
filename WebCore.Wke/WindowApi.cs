@@ -9,6 +9,49 @@ namespace WebCore.Wke
 {
     public static class WindowApi
     {
+
+        public const uint WM_PAINT = 0xf;
+
+        public const uint WM_REFRESH = 0x200f;
+
+        public const uint WM_NCHITTEST = 0x84;
+
+        public const uint WM_SETCURSOR = 0x20;
+
+        public const uint WM_MOUSEWHEEL = 0x20a;
+        
+        public const uint WM_MOUSEMOVE = 0x200;
+
+        public const uint WM_MOUSEFIRST  =0x0200;
+
+        public const uint WM_LBUTTONDOWN = 0x0201;
+
+        public const uint WM_LBUTTONUP = 0x0202;
+
+        public const uint WM_LBUTTONDBLCLK = 0x0203;
+
+        public const uint WM_RBUTTONDOWN = 0x0204;
+
+        public const uint WM_RBUTTONUP = 0x0205;
+
+        public const uint WM_RBUTTONDBLCLK = 0x0206;
+
+        public const uint WM_MBUTTONDOWN = 0x0207;
+
+        public const uint WM_MBUTTONUP = 0x0208;
+
+        public const uint WM_MBUTTONDBLCLK = 0x0209;
+
+        public const uint MK_LBUTTON = 0x0001;
+
+        public const uint MK_RBUTTON = 0x0002;
+
+        public const uint MK_SHIFT = 0x0004;
+
+        public const uint MK_CONTROL = 0x0008;
+
+        public const uint MK_MBUTTON = 0x0010;
+
         #region WindowsApi
         public struct RECT
         {

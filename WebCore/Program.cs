@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using WebCore.MinblinkCom;
+using WebCore.Wke;
 
 namespace WebCore
 {

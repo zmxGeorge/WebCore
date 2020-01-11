@@ -14,7 +14,6 @@ namespace WebCore
 {
     public partial class MainForm : Form
     {
-
         private WebView _view = new WebView();
 
         public MainForm()

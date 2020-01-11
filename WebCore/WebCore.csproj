@@ -90,7 +90,7 @@
     <None Include="core\wke.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Content Include="fav.ico" />
+    <EmbeddedResource Include="fav.ico" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\WebCore.Wke\WebCore.Wke.csproj">

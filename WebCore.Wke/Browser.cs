@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace WebCore.Wke
@@ -31,6 +32,14 @@ namespace WebCore.Wke
         public void Application_Init()
         {
             WkeApi.wkeInitialize();
+            wkeSettings settings = new wkeSettings();
+            settings.cookieFilePath = new char[1024];
+            "cookies.dat".ToCharArray().CopyTo(settings.cookieFilePath, 0);
+            var size = Marshal.SizeOf(settings);
+            var ptr = Marshal.AllocHGlobal(size);
+            Marshal.StructureToPtr(settings, ptr, true);
+            WkeApi.wkeConfigure(ptr);
+            Marshal.FreeHGlobal(ptr);
         }
 
         public void Application_Close()
