@@ -10,6 +10,12 @@ namespace WebCore.Wke
     public static class WindowApi
     {
 
+        public const uint CFS_POINT= 0x0002;
+
+        public const uint CFS_EXCLUDE=0x0080;
+
+        public const uint WM_IME_STARTCOMPOSITION = 0x010D;
+
         public const uint WM_PAINT = 0xf;
 
         public const uint WM_REFRESH = 0x200f;
@@ -60,6 +66,18 @@ namespace WebCore.Wke
             public uint Right;
             public uint Bottom;
         }
+
+        [DllImport("Imm32.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern IntPtr ImmGetContext(IntPtr hwnd);
+
+        [DllImport("Imm32.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool ImmSetCandidateWindow(IntPtr hIMC, IntPtr form);
+
+        [DllImport("Imm32.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool ImmSetCompositionWindow(IntPtr hIMC,IntPtr compForm);
+
+        [DllImport("Imm32.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern IntPtr ImmReleaseContext(IntPtr hwnd,IntPtr hIMC);
         /// <summary>
         /// 返回指定窗口客户区矩形的大小
         /// </summary>

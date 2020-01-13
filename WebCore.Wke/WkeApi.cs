@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -40,6 +41,42 @@ namespace WebCore.Wke
         WKE_EXTENDED = 0x0100,
         WKE_REPEAT = 0x4000
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public long left;
+        public long right;
+        public long top;
+        public long bottom;
+
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT
+    {
+        public long y;
+        public long x;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CANDIDATEFORM
+    {
+        public int dwIndex;
+        public int dwStyle;
+        public Point ptCurrentPos;
+        public Rectangle rcArea;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct COMPOSITIONFORM
+    {
+        public int dwStyle;
+        public Point ptCurrentPos;
+        public Rectangle rcArea;
+    }
+
+
 
     public struct wkeRect
     {
@@ -345,6 +382,21 @@ namespace WebCore.Wke
 
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern wkeRect wkeGetCaretRect(IntPtr webView);
+
+        #region JS模块
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern IntPtr wkeGlobalExec(IntPtr webView);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void  wkeJSAddRef(IntPtr es, long v);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void  wkeJSReleaseRef(IntPtr es, long v);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void  wkeJSCollectGarbge();
+        #endregion
 
     }
 }

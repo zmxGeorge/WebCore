@@ -17,6 +17,8 @@ namespace WebCore.Wke
 
         private string _url = null;
 
+        private JavaScriptContext _scriptContext = null;
+
         private wkePaintUpdatedCallback _onPaint = null;
 
         private wkeLoadingFinishCallback _onFinish = null;
@@ -44,6 +46,11 @@ namespace WebCore.Wke
                 WkeApi.wkeSetWindowTitle(_webView, value);
             }
         }
+
+        /// <summary>
+        /// 获取JS上下文对象
+        /// </summary>
+        public JavaScriptContext ScriptContext { get { return _scriptContext; } }
 
         public WebView()
         {
@@ -278,6 +285,12 @@ namespace WebCore.Wke
             {
                 //离屏渲染模式
                 _webView = WkeApi.wkeCreateWebView();
+                if (ScriptContext != null)
+                {
+                    ScriptContext.Dispose();
+                    GC.Collect();
+                }
+                _scriptContext = new JavaScriptContext(_webView);
                 WkeApi.wkeSetCookieEnabled(_webView,true);
                 //设置缩放大小，默认为1
                 WkeApi.wkeSetZoomFactor(_webView,1f);
@@ -480,6 +493,35 @@ namespace WebCore.Wke
             {
                 #region 处理鼠标消息
                 ProcessMouseEvent(ref m);
+                #endregion
+
+                #region 输入法支持
+                if (m.Msg == WindowApi.WM_IME_STARTCOMPOSITION)
+                {
+                    wkeRect caret =WkeApi.wkeGetCaretRect(_webView);
+                    CANDIDATEFORM form=new CANDIDATEFORM();
+                    form.dwIndex = 0;
+                    form.dwStyle =(int)WindowApi.CFS_EXCLUDE;
+                    form.ptCurrentPos.X = caret.x;
+                    form.ptCurrentPos.Y = caret.y;
+                    form.rcArea = new Rectangle(caret.x, caret.y, caret.w, caret.h);
+                    COMPOSITIONFORM compForm=new COMPOSITIONFORM();
+                    compForm.ptCurrentPos = form.ptCurrentPos;
+                    compForm.rcArea = form.rcArea;
+                    compForm.dwStyle = (int)WindowApi.CFS_POINT;
+                    var form_size = Marshal.SizeOf(form);
+                    var formPtr = Marshal.AllocHGlobal(form_size);
+                    Marshal.StructureToPtr(form, formPtr, true);
+                    var comp_size = Marshal.SizeOf(compForm);
+                    var compFormPtr = Marshal.AllocHGlobal(form_size);
+                    Marshal.StructureToPtr(compForm, compFormPtr, true);
+                    var hIMC = WindowApi.ImmGetContext(Handle);
+                    WindowApi.ImmSetCandidateWindow(hIMC, formPtr);
+                    WindowApi.ImmSetCompositionWindow(hIMC, compFormPtr);
+                    WindowApi.ImmReleaseContext(Handle, hIMC);
+                    Marshal.FreeHGlobal(formPtr);
+                    Marshal.FreeHGlobal(compFormPtr);
+                }
                 #endregion
             }
             base.WndProc(ref m);

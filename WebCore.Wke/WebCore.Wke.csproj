@@ -43,7 +43,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Browser.cs" />
+    <Compile Include="JavaScript\JSConvert.cs" />
+    <Compile Include="JavaScript\JSGC.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="JavaScriptContext.cs" />
+    <Compile Include="ScripteExt.cs" />
     <Compile Include="WebView.cs">
       <SubType>Component</SubType>
     </Compile>
