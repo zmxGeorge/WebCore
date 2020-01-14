@@ -28,7 +28,7 @@ namespace WebCore.Wke.JavaScript
             try
             {
                 _lock.WaitOne();
-                WkeApi.wkeJSCollectGarbge();
+                JSApi.wkeJSCollectGarbge();
             }
             finally
             {

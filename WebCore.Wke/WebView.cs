@@ -15,13 +15,33 @@ namespace WebCore.Wke
     {
         private IntPtr _webView = IntPtr.Zero;
 
-        private string _url = null;
-
         private JavaScriptContext _scriptContext = null;
 
         private wkePaintUpdatedCallback _onPaint = null;
 
         private wkeLoadingFinishCallback _onFinish = null;
+
+        private wkeNavigationCallback _onNavigation = null;
+
+        private wkeDocumentReadyCallback _onDocumentReady = null;
+
+        private wkeConsoleMessageCallback _onConsoleMessage = null;
+
+        private wkeMessageBoxCallback _onAlertMessageCallBack = null;
+
+        private wkeMessageBoxCallback _onConfirmMessageCallBack = null;
+
+        private wkeMessageBoxCallback _onPromptMessageCallBack = null;
+
+        public event OnLoadingComplete LoadingComplete;
+
+        public event OnConselMessage ConselMessage;
+
+        public event OnDocumentReady DocumentReady;
+
+        public event OnNavigation Navigation;
+
+        public event OnPopMessageBox PopMessageBox;
 
 
         /// <summary>
@@ -48,6 +68,19 @@ namespace WebCore.Wke
         }
 
         /// <summary>
+        /// 设置浏览器描述字符串
+        /// </summary>
+        /// <param name="userAgent"></param>
+        public void SetUserAgent(string userAgent)
+        {
+            if (_webView == IntPtr.Zero)
+            {
+                return;
+            }
+            WkeApi.wkeSetUserAgent(_webView, userAgent);
+        }
+
+        /// <summary>
         /// 获取JS上下文对象
         /// </summary>
         public JavaScriptContext ScriptContext { get { return _scriptContext; } }
@@ -56,11 +89,81 @@ namespace WebCore.Wke
         {
             _onPaint = new wkePaintUpdatedCallback(OnWebPaint);
             _onFinish = new wkeLoadingFinishCallback(OnWebFinsh);
+            _onConsoleMessage = new wkeConsoleMessageCallback(OnConsoleMessage);
+            _onDocumentReady = new wkeDocumentReadyCallback(OnWebDocumentReady);
+            _onNavigation = new wkeNavigationCallback(OnWebNavigation);
+            _onAlertMessageCallBack = new wkeMessageBoxCallback(OnAlertMessageBox);
+            _onConfirmMessageCallBack = new wkeMessageBoxCallback(OnConfirmMessageBox);
+            _onPromptMessageCallBack = new wkeMessageBoxCallback(OnPromptMessageBox);
             this.SetStyle(ControlStyles.UserPaint |
                 ControlStyles.OptimizedDoubleBuffer |
                 ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.Selectable |
                 ControlStyles.Opaque, true);
+        }
+
+        private void OnPromptMessageBox(IntPtr webView, IntPtr param, IntPtr msg)
+        {
+            string message = WkeApi.wkeGetString(msg);
+            if (PopMessageBox != null)
+            {
+                PopMessageBox(this, PopMessageBoxType.Prompt, message);
+            }
+        }
+
+        private void OnConfirmMessageBox(IntPtr webView, IntPtr param, IntPtr msg)
+        {
+            string message = WkeApi.wkeGetString(msg);
+            if (PopMessageBox != null)
+            {
+                PopMessageBox(this, PopMessageBoxType.Confirm, message);
+            }
+        }
+
+        private void OnAlertMessageBox(IntPtr webView, IntPtr param, IntPtr msg)
+        {
+            string message = WkeApi.wkeGetString(msg);
+            if (PopMessageBox != null)
+            {
+                PopMessageBox(this, PopMessageBoxType.Alert, message);
+            }
+        }
+
+        private bool OnWebNavigation(IntPtr webView, IntPtr param, NavigationType navigationType, IntPtr urlPtr)
+        {
+            try
+            {
+                string url = WkeApi.wkeGetString(urlPtr);
+                if (Navigation != null)
+                {
+                    return Navigation(this, navigationType, url);
+                }
+                return true;
+            }
+            finally
+            {
+                //页面每次跳转都对JS对象进行清理
+                ScriptContext.GC_Collect();
+            }
+        }
+
+        private void OnWebDocumentReady(IntPtr webView, IntPtr param, wkeDocumentReadyInfo info)
+        {
+            string url = WkeApi.wkeGetString(info.url);
+            if (DocumentReady != null)
+            {
+                DocumentReady(this, url);
+            }
+        }
+
+        private void OnConsoleMessage(IntPtr webView, IntPtr param, wkeConsoleMessage conMsg)
+        {
+            string message =WkeApi.wkeGetString(conMsg.message);
+            string url = WkeApi.wkeGetString(conMsg.url);
+            if (ConselMessage != null)
+            {
+                ConselMessage(this, conMsg.source, conMsg.type, conMsg.level, conMsg.lineNumber, url, message);
+            }
         }
 
         /// <summary>
@@ -75,9 +178,12 @@ namespace WebCore.Wke
             IntPtr url, wkeLoadingResult result,
             IntPtr failedReason)
         {
-            if (result == wkeLoadingResult.WKE_LOADING_SUCCEEDED)
+            WkeApi.wkeRepaintAllNeeded();
+            string reason = WkeApi.wkeGetString(failedReason);
+            string URL = WkeApi.wkeGetString(url);
+            if (LoadingComplete != null)
             {
-                WkeApi.wkeRepaintAllNeeded();
+                LoadingComplete(this, URL,reason,(UrlLoadResult)(int)result);
             }
         }
 
@@ -142,9 +248,6 @@ namespace WebCore.Wke
         private const int WM_KEYUP = 0x101;
 
         private const int WM_CHAR = 0x102;
-
-
-       
 
         private void RunPaint(object state)
         {
@@ -280,7 +383,6 @@ namespace WebCore.Wke
         /// <param name="url"></param>
         public void Load(string url)
         {
-            _url = url;
             if (_webView == IntPtr.Zero)
             {
                 //离屏渲染模式
@@ -296,12 +398,25 @@ namespace WebCore.Wke
                 WkeApi.wkeSetZoomFactor(_webView,1f);
                 //给出初始大小
                 WkeApi.wkeResize(_webView, Width, Height);
+
                 //监听绘制事件
                 WkeApi.wkeOnPaintUpdated(_webView,
                     _onPaint, IntPtr.Zero);
                 //加载完成事件
                 WkeApi.wkeOnLoadingFinish(_webView,
                     _onFinish, IntPtr.Zero);
+                //页面发生跳转时
+                WkeApi.wkeOnNavigation(_webView, _onNavigation, IntPtr.Zero);
+                //页面完全加载时
+                WkeApi.wkeOnDocumentReady(_webView, _onDocumentReady, IntPtr.Zero);
+                //控制台打印时
+                WkeApi.wkeOnConsoleMessage(_webView, _onConsoleMessage, IntPtr.Zero);
+                //使用Alert提示框时
+                WkeApi.wkeOnAlertBox(_webView, _onAlertMessageCallBack, IntPtr.Zero);
+                //使用Confirm提示框时
+                WkeApi.wkeOnConfirmBox(_webView, _onConfirmMessageCallBack, IntPtr.Zero);
+                //使用Prompt提示框时
+                WkeApi.wkeOnAlertBox(_webView, _onPromptMessageCallBack, IntPtr.Zero);
             }
             WkeApi.wkeLoad(_webView, url);
         }
@@ -312,7 +427,8 @@ namespace WebCore.Wke
         /// <param name="fileName"></param>
         public void LoadFile(string fileName)
         {
-            _url = Path.GetFullPath(fileName);
+            var url =new Uri(Path.GetFullPath(fileName)).AbsoluteUri;
+            Load(url);
         }
 
         /// <summary>
@@ -409,14 +525,14 @@ namespace WebCore.Wke
                 }
                 uint virtualKeyCode, flags;
                 ProcessKeyEvent(msg, out virtualKeyCode, out flags);
-                if (WkeApi.wkeFireKeyDownEvent(_webView, virtualKeyCode, flags, isSys))
+                if (WkeApi.wkeFireKeyDownEvent(_webView, virtualKeyCode, flags, false))
                 {
                     msg.Result = IntPtr.Zero;
                 }
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
-        private void ProcessKey(ref Message m,bool isSys=false)
+        private bool ProcessKey(ref Message m,bool isSys=false)
         {
             switch (m.Msg)
             {
@@ -429,12 +545,12 @@ namespace WebCore.Wke
                         {
                             isSys = true;
                         }
-                        if (WkeApi.wkeFireKeyUpEvent(_webView, virtualKeyCode, flags, isSys))
+                        if (WkeApi.wkeFireKeyUpEvent(_webView, virtualKeyCode, flags, false))
                         {
                             m.Result = IntPtr.Zero;
                         }
                     }
-                    break;
+                    return true;
                 case WM_CHAR:
                     {
                         uint virtualKeyCode, flags;
@@ -445,13 +561,14 @@ namespace WebCore.Wke
                             isSys = true;
                         }
                         var keys = (Keys)virtualKeyCode;
-                        if (WkeApi.wkeFireKeyPressEvent(_webView, virtualKeyCode, flags, isSys))
+                        if (WkeApi.wkeFireKeyPressEvent(_webView, virtualKeyCode, flags, false))
                         {
                             m.Result = IntPtr.Zero;
                         }
                     }
-                    break;
+                    return false;
             }
+            return false;
         }
 
         private short HIWORD(IntPtr LPARAM)

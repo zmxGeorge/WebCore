@@ -3,22 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.IO;
+using Microsoft.Win32.SafeHandles;
 
 namespace WebCore.Wke
 {
-    /// <summary>
-    /// HTML文档加载完成时发生
-    /// </summary>
-    /// <param name="view"></param>
-    /// <param name="url"></param>
-    public delegate void OnDocumentReady(WebView view,string url);
-
-    /// <summary>
-    /// URL加载失败
-    /// </summary>
-    /// <param name="view"></param>
-    /// <param name="message"></param>
-    public delegate void OnLoadingFail(WebView view,string url,string message);
+   
 
     public class Browser
     {
@@ -33,6 +23,7 @@ namespace WebCore.Wke
         {
             WkeApi.wkeInitialize();
             wkeSettings settings = new wkeSettings();
+            settings.mask = 2;
             settings.cookieFilePath = new char[1024];
             "cookies.dat".ToCharArray().CopyTo(settings.cookieFilePath, 0);
             var size = Marshal.SizeOf(settings);
@@ -40,6 +31,20 @@ namespace WebCore.Wke
             Marshal.StructureToPtr(settings, ptr, true);
             WkeApi.wkeConfigure(ptr);
             Marshal.FreeHGlobal(ptr);
+            #region 加载扩展库
+            //DirectoryInfo extDir = new DirectoryInfo("ext");
+            //extDir.Refresh();
+            //if (extDir.Exists)
+            //{
+            //    var files = extDir.GetFiles("*.dll");
+            //    foreach (var item in files)
+            //    {
+            //        using (var stream = item.OpenRead())
+            //        {
+            //        }
+            //    }
+            //}
+            #endregion
         }
 
         public void Application_Close()

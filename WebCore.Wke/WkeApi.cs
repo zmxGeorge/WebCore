@@ -138,9 +138,41 @@ namespace WebCore.Wke
         public int biClrImportant;
     }
 
-      [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void wkeMessageBoxCallback(IntPtr webView, IntPtr param, IntPtr msg);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct wkeConsoleMessage
+    {
+        public MessageSource source;
+        public MessageType type;
+        public MessageLevel level;
+        public IntPtr message;
+        public IntPtr url;
+        public int lineNumber;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void wkeConsoleMessageCallback (IntPtr webView, IntPtr param,[MarshalAs(UnmanagedType.LPStruct)]wkeConsoleMessage message);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void wkePaintUpdatedCallback(IntPtr webView, IntPtr param, IntPtr hdc, 
         int x, int y, int cx, int cy);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate IntPtr FILE_OPEN(string path);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void FILE_CLOSE(IntPtr handle);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate long FILE_SIZE(IntPtr handle);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate int FILE_READ(IntPtr handle, IntPtr buffer, long size);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate int FILE_SEEK(IntPtr handle, int offset, int origin);
 
     public enum wkeLoadingResult
     {
@@ -153,6 +185,21 @@ namespace WebCore.Wke
     public delegate void wkeLoadingFinishCallback(IntPtr webView, IntPtr param, 
         IntPtr url, wkeLoadingResult result,IntPtr failedReason);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate bool wkeNavigationCallback(IntPtr webView, IntPtr param,
+        NavigationType navigationType, IntPtr url);
+
+    public struct wkeDocumentReadyInfo
+    {
+        public IntPtr url;
+        public IntPtr frameJSState;
+        public IntPtr mainFrameJSState;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void wkeDocumentReadyCallback(IntPtr webView, IntPtr param, [MarshalAs(UnmanagedType.LPStruct)] wkeDocumentReadyInfo info);
+
+
     public static class WkeApi
     {
         public const int KF_EXTENDED = 0x0100;
@@ -161,6 +208,9 @@ namespace WebCore.Wke
         public const int KF_ALTDOWN = 0x2000;
         public const int KF_REPEAT = 0x4000;
         public const int KF_UP = 0x8000;
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern string wkeGetString(IntPtr strPtr);
 
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern void wkeConfigure(IntPtr settings);
@@ -300,6 +350,43 @@ namespace WebCore.Wke
         /// <param name="param"></param>
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern void wkeOnLoadingFinish(IntPtr webView, wkeLoadingFinishCallback callback,IntPtr param);
+
+        /// <summary>
+        /// 页面跳转时发生
+        /// </summary>
+        /// <param name="webView"></param>
+        /// <param name="callback"></param>
+        /// <param name="param"></param>
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeOnNavigation(IntPtr webView, wkeNavigationCallback callback, IntPtr param);
+
+        /// <summary>
+        /// 当文档完全加载时发生
+        /// </summary>
+        /// <param name="webView"></param>
+        /// <param name="callback"></param>
+        /// <param name="param"></param>
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeOnDocumentReady(IntPtr webView, wkeDocumentReadyCallback callback, IntPtr param);
+
+        /// <summary>
+        /// 发送控制台消息时发生
+        /// </summary>
+        /// <param name="webView"></param>
+        /// <param name="callback"></param>
+        /// <param name="callbackParam"></param>
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeOnConsoleMessage(IntPtr webView, wkeConsoleMessageCallback callback,IntPtr callbackParam);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeOnAlertBox(IntPtr webView, wkeMessageBoxCallback callback, IntPtr callbackParam);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeOnConfirmBox(IntPtr webView, wkeMessageBoxCallback callback, IntPtr callbackParam);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeOnPromptBox(IntPtr webView, wkeMessageBoxCallback callback, IntPtr callbackParam);
+
         /// <summary>
         /// 获取标题
         /// </summary>
@@ -383,20 +470,14 @@ namespace WebCore.Wke
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern wkeRect wkeGetCaretRect(IntPtr webView);
 
-        #region JS模块
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeSetUserAgent(IntPtr webView, string userAgent);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern void wkeSetFileSystem(FILE_OPEN pfn_open, FILE_CLOSE pfn_close, FILE_SIZE pfn_size, FILE_READ pfn_read, FILE_SEEK pfn_seek);
 
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern IntPtr wkeGlobalExec(IntPtr webView);
-
-        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-        public static extern void  wkeJSAddRef(IntPtr es, long v);
-
-        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-        public static extern void  wkeJSReleaseRef(IntPtr es, long v);
-
-        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-        public static extern void  wkeJSCollectGarbge();
-        #endregion
 
     }
 }
