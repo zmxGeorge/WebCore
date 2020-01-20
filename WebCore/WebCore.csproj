@@ -75,6 +75,8 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <None Include="app.config" />
+    <None Include="core\wke.lib" />
+    <None Include="core\wkeJavaScript.lib" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -97,6 +99,9 @@
       <Project>{8f89125a-73f5-4246-85bf-1c6317f1e32e}</Project>
       <Name>WebCore.Wke</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="core\wkeJavaScript.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
