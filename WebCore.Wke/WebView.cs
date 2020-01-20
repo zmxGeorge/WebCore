@@ -8,6 +8,9 @@ using System.Threading;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
+using WebCore.Wke.Csharp;
+using System.Runtime.CompilerServices;
+using WebCore.Wke.JavaScript;
 
 namespace WebCore.Wke
 {
@@ -102,9 +105,25 @@ namespace WebCore.Wke
                 ControlStyles.Opaque, true);
         }
 
+        private static string GetString(IntPtr ptr)
+        {
+            var str_ptr = WkeApi.wkeGetStringPtr(ptr);
+            StringBuilder sb = new StringBuilder();
+            int index = 0;
+            var code = Marshal.ReadInt16(str_ptr, index);
+            while (code != 0)
+            {
+                sb.Append((char)code);
+                index += 2;
+                code = Marshal.ReadInt16(str_ptr, index);
+            }
+            var message = sb.ToString();
+            return message;
+        }
+
         private void OnPromptMessageBox(IntPtr webView, IntPtr param, IntPtr msg)
         {
-            string message = WkeApi.wkeGetString(msg);
+            string message = GetString(msg);
             if (PopMessageBox != null)
             {
                 PopMessageBox(this, PopMessageBoxType.Prompt, message);
@@ -113,7 +132,7 @@ namespace WebCore.Wke
 
         private void OnConfirmMessageBox(IntPtr webView, IntPtr param, IntPtr msg)
         {
-            string message = WkeApi.wkeGetString(msg);
+            string message = GetString(msg);
             if (PopMessageBox != null)
             {
                 PopMessageBox(this, PopMessageBoxType.Confirm, message);
@@ -122,7 +141,7 @@ namespace WebCore.Wke
 
         private void OnAlertMessageBox(IntPtr webView, IntPtr param, IntPtr msg)
         {
-            string message = WkeApi.wkeGetString(msg);
+            string message = GetString(msg);
             if (PopMessageBox != null)
             {
                 PopMessageBox(this, PopMessageBoxType.Alert, message);
@@ -133,12 +152,18 @@ namespace WebCore.Wke
         {
             try
             {
-                string url = WkeApi.wkeGetString(urlPtr);
+                string url = GetString(urlPtr);
+                var res = true;
                 if (Navigation != null)
                 {
-                    return Navigation(this, navigationType, url);
+                    res= Navigation(this, navigationType, url);
                 }
-                return true;
+                if (res)
+                {
+                    //清理遗留的委托对象
+                    ClearView();
+                }
+                return res;
             }
             finally
             {
@@ -147,19 +172,36 @@ namespace WebCore.Wke
             }
         }
 
-        private void OnWebDocumentReady(IntPtr webView, IntPtr param, wkeDocumentReadyInfo info)
+        private void ClearView()
         {
-            string url = WkeApi.wkeGetString(info.url);
+            FunctionCreater.CancelByView(_webView);
+            List<Control> listControl = new List<Control>();
+            foreach (Control control in Controls)
+            {
+                listControl.Add(control);
+            }
+            foreach (var item in listControl)
+            {
+                Controls.Remove(item);
+                item.Dispose();
+            }
+            JSGC.Current.CollectObject(_webView);
+        }
+
+        private void OnWebDocumentReady(IntPtr webView, IntPtr param, IntPtr info)
+        {
+            string url = GetString(Marshal.ReadIntPtr(info));
             if (DocumentReady != null)
             {
                 DocumentReady(this, url);
             }
         }
 
-        private void OnConsoleMessage(IntPtr webView, IntPtr param, wkeConsoleMessage conMsg)
+        private void OnConsoleMessage(IntPtr webView, IntPtr param, IntPtr conMsgPtr)
         {
-            string message =WkeApi.wkeGetString(conMsg.message);
-            string url = WkeApi.wkeGetString(conMsg.url);
+            var conMsg = (wkeConsoleMessage)Marshal.PtrToStructure(conMsgPtr, typeof(wkeConsoleMessage));
+            string url = GetString(conMsg.url);
+            string message = GetString(conMsg.message);
             if (ConselMessage != null)
             {
                 ConselMessage(this, conMsg.source, conMsg.type, conMsg.level, conMsg.lineNumber, url, message);
@@ -179,8 +221,8 @@ namespace WebCore.Wke
             IntPtr failedReason)
         {
             WkeApi.wkeRepaintAllNeeded();
-            string reason = WkeApi.wkeGetString(failedReason);
-            string URL = WkeApi.wkeGetString(url);
+            string reason = GetString(failedReason);
+            string URL = GetString(url);
             if (LoadingComplete != null)
             {
                 LoadingComplete(this, URL,reason,(UrlLoadResult)(int)result);
@@ -217,9 +259,25 @@ namespace WebCore.Wke
                 }
                 finally
                 {
-                    this.Invalidate(new Rectangle(x, y, width, height));
+                    var rect = new Rectangle(x, y, width, height);
+                    ThreadPool.QueueUserWorkItem(RefreshControl, rect);
+                    this.Invalidate(rect);
                 }
             }
+        }
+
+        private void RefreshControl(object state)
+        {
+            var rect = (Rectangle)state;
+            Invoke(new Action<int>(xs => {
+                foreach (NativeControl control in Controls)
+                {
+                    if (rect.Contains(control.Location))
+                    {
+
+                    }
+                }
+            }), 0);
         }
 
         /// <summary>
@@ -367,6 +425,7 @@ namespace WebCore.Wke
             if (_webView != IntPtr.Zero)
             {
                 _messageSet.Set();
+                ClearView();
                 WkeApi.wkeDestroyWebView(_webView);
                 _webView = IntPtr.Zero;
             }
@@ -517,12 +576,6 @@ namespace WebCore.Wke
             //就这个事件里，监听的到按向上下左右的KEY_DOWN消息
             if (msg.Msg == WM_KEYDOWN)
             {
-                bool isSys = false;
-                if (keyData >= Keys.F1 && keyData <= Keys.F24||
-                    keyData==Keys.Escape)
-                {
-                    isSys = true;
-                }
                 uint virtualKeyCode, flags;
                 ProcessKeyEvent(msg, out virtualKeyCode, out flags);
                 if (WkeApi.wkeFireKeyDownEvent(_webView, virtualKeyCode, flags, false))
@@ -540,11 +593,6 @@ namespace WebCore.Wke
                     {
                         uint virtualKeyCode, flags;
                         ProcessKeyEvent(m, out virtualKeyCode, out flags);
-                        if (virtualKeyCode >= (uint)Keys.F1 && virtualKeyCode <= (uint)Keys.F24 ||
-                            virtualKeyCode == (uint)Keys.Escape)
-                        {
-                            isSys = true;
-                        }
                         if (WkeApi.wkeFireKeyUpEvent(_webView, virtualKeyCode, flags, false))
                         {
                             m.Result = IntPtr.Zero;
@@ -555,11 +603,6 @@ namespace WebCore.Wke
                     {
                         uint virtualKeyCode, flags;
                         ProcessKeyEvent(m, out virtualKeyCode, out flags);
-                        if (virtualKeyCode >= (uint)Keys.F1 && virtualKeyCode <= (uint)Keys.F24 ||
-                            virtualKeyCode == (uint)Keys.Escape)
-                        {
-                            isSys = true;
-                        }
                         var keys = (Keys)virtualKeyCode;
                         if (WkeApi.wkeFireKeyPressEvent(_webView, virtualKeyCode, flags, false))
                         {

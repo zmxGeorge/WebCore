@@ -23,10 +23,30 @@ namespace WebCore
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            _view.Load(@"https://www.baidu.com");
+            _view.ConselMessage += _view_ConselMessage;
+            _view.PopMessageBox += _view_PopMessageBox;
+            _view.Load(@"test.html");
             _view.Dock = DockStyle.Fill;
             _view.Visible = true;
             Controls.Add(_view);
+        }
+
+        private void _view_PopMessageBox(WebView view, PopMessageBoxType popMessageType, string message)
+        {
+            if (popMessageType == PopMessageBoxType.Alert ||
+                popMessageType == PopMessageBoxType.Prompt)
+            {
+                MessageBox.Show(message);
+            }
+            else
+            {
+                MessageBox.Show(message,string.Empty, MessageBoxButtons.YesNo);
+            }
+        }
+
+        private void _view_ConselMessage(WebView view, MessageSource source, MessageType msgType, MessageLevel level, int lineNumber, string url, string message)
+        {
+            Console.WriteLine(message);
         }
     }
 }

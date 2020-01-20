@@ -145,15 +145,20 @@ namespace WebCore.Wke
     public struct wkeConsoleMessage
     {
         public MessageSource source;
+
         public MessageType type;
+
         public MessageLevel level;
+
         public IntPtr message;
+
         public IntPtr url;
+
         public int lineNumber;
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void wkeConsoleMessageCallback (IntPtr webView, IntPtr param,[MarshalAs(UnmanagedType.LPStruct)]wkeConsoleMessage message);
+    public delegate void wkeConsoleMessageCallback (IntPtr webView, IntPtr param,IntPtr message);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void wkePaintUpdatedCallback(IntPtr webView, IntPtr param, IntPtr hdc, 
@@ -189,15 +194,8 @@ namespace WebCore.Wke
     public delegate bool wkeNavigationCallback(IntPtr webView, IntPtr param,
         NavigationType navigationType, IntPtr url);
 
-    public struct wkeDocumentReadyInfo
-    {
-        public IntPtr url;
-        public IntPtr frameJSState;
-        public IntPtr mainFrameJSState;
-    }
-
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void wkeDocumentReadyCallback(IntPtr webView, IntPtr param, [MarshalAs(UnmanagedType.LPStruct)] wkeDocumentReadyInfo info);
+    public delegate void wkeDocumentReadyCallback(IntPtr webView, IntPtr param, IntPtr info);
 
 
     public static class WkeApi
@@ -211,6 +209,9 @@ namespace WebCore.Wke
 
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern string wkeGetString(IntPtr strPtr);
+
+        [DllImport("core/wke.dll",EntryPoint = "wkeGetString", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern IntPtr wkeGetStringPtr(IntPtr strPtr);
 
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern void wkeConfigure(IntPtr settings);

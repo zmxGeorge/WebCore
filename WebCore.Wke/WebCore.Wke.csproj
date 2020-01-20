@@ -43,16 +43,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Browser.cs" />
+    <Compile Include="Csharp\FunctionCreater.cs" />
     <Compile Include="DelConst.cs" />
     <Compile Include="JavaScript\JSConvert.cs" />
     <Compile Include="JavaScript\JSGC.cs" />
     <Compile Include="JSApi.cs" />
+    <Compile Include="MethodRef.cs" />
+    <Compile Include="NativeControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="JavaScriptContext.cs" />
     <Compile Include="ScripteExt.cs" />
     <Compile Include="WebView.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="WekObjectRef.cs" />
     <Compile Include="WindowApi.cs" />
     <Compile Include="WkeApi.cs" />
   </ItemGroup>
