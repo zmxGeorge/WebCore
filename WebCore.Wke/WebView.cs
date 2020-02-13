@@ -11,6 +11,8 @@ using System.Drawing.Imaging;
 using WebCore.Wke.Csharp;
 using System.Runtime.CompilerServices;
 using WebCore.Wke.JavaScript;
+using System.Net;
+using System.Net.Cache;
 
 namespace WebCore.Wke
 {
@@ -148,22 +150,96 @@ namespace WebCore.Wke
             }
         }
 
+        private const string CHORME_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11";
+
+        private const string CONTENT_TYPE = "text/plain";
+
+        private const char SP = '%';
+
+        private const char ZERO = '0';
+
+        private const char T_A = 'A';
+
+        private const char T_F = 'F';
+
+        private string GetUnCodeUrl(string url)
+        {
+            StringBuilder hex = new StringBuilder();
+            bool open = false;
+            List<byte> bList = new List<byte>();
+            for (int i = 0; i < url.Length;)
+            {
+                char p = url[i];
+                if (p != SP && open == false)
+                {
+                    hex.Append(p);
+                    i++;
+                    continue;
+                }
+                else if (p != SP && open)
+                {
+                    open = false;
+                    if (bList.Count > 0)
+                    {
+                        var str = Encoding.GetEncoding("GBK").GetString(bList.ToArray());
+                        hex.Append(str);
+                        bList.Clear();
+                    }
+                    hex.Append(p);
+                    i++;
+                    continue;
+                }
+                else if (p == SP)
+                {
+                    open = true;
+                    var f = url[i + 1];
+                    var n = url[i + 2];
+                    if (f >= ZERO && f <= T_F &&
+                        n >= ZERO && n <= T_F)
+                    {
+                        var t_f = (int)f;
+                        if (f >= T_A)
+                        {
+                            t_f = (t_f - (int)T_A)+10;
+                        }
+                        else
+                        {
+                            t_f = t_f - (int)ZERO;
+                        }
+                        var t_n = (int)n;
+                        if (n >= T_A)
+                        {
+                            t_n = (t_n - (int)T_A)+10;
+                        }
+                        else
+                        {
+                            t_n = t_n - (int)ZERO;
+                        }
+                        bList.Add((byte)(t_f*16 + t_n));
+                        i = i + 3;
+                    }
+                }
+            }
+            return hex.ToString();
+        }
+
         private bool OnWebNavigation(IntPtr webView, IntPtr param, NavigationType navigationType, IntPtr urlPtr)
         {
             try
             {
-                string url = GetString(urlPtr);
+                var urlStr = GetString(urlPtr);
+                Uri b_url = new Uri(urlStr);
                 var res = true;
                 if (Navigation != null)
                 {
-                    res= Navigation(this, navigationType, url);
+                    res = Navigation(this, navigationType, urlStr);
                 }
                 if (res)
                 {
                     //清理遗留的委托对象
                     ClearView();
                 }
-                return res;
+                return true;
             }
             finally
             {
@@ -208,6 +284,14 @@ namespace WebCore.Wke
             }
         }
 
+        private const string ATTR_LOACTION = "location";
+        private const string ATTR_HREF = "href";
+
+        private string _baseUrl = null;
+
+        public string BaseUrl { get { return _baseUrl; } }
+
+       
         /// <summary>
         /// 页面加载完成之后引发的事件
         /// </summary>
@@ -223,6 +307,11 @@ namespace WebCore.Wke
             WkeApi.wkeRepaintAllNeeded();
             string reason = GetString(failedReason);
             string URL = GetString(url);
+            var es = WkeApi.wkeGlobalExec(webView);
+            var lc = JSApi.wkeJSGetGlobal(es, ATTR_LOACTION);
+            var baseUrl_l = JSApi.wkeJSGet(es, lc, ATTR_HREF);
+            _baseUrl = JSHelper.GetJsString(es, baseUrl_l);
+            JSApi.wkeJSCollectGarbge();
             if (LoadingComplete != null)
             {
                 LoadingComplete(this, URL,reason,(UrlLoadResult)(int)result);
@@ -451,7 +540,7 @@ namespace WebCore.Wke
                     ScriptContext.Dispose();
                     GC.Collect();
                 }
-                _scriptContext = new JavaScriptContext(_webView);
+                _scriptContext = new JavaScriptContext(this,_webView);
                 WkeApi.wkeSetCookieEnabled(_webView,true);
                 //设置缩放大小，默认为1
                 WkeApi.wkeSetZoomFactor(_webView,1f);

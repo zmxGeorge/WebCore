@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 
 namespace WebCore.Wke
@@ -11,6 +12,8 @@ namespace WebCore.Wke
     /// <param name="view"></param>
     /// <param name="url"></param>
     public delegate void OnDocumentReady(WebView view, string url);
+
+    public delegate void OnDownLoad(string url);
 
     public enum NavigationType
     {
@@ -29,9 +32,7 @@ namespace WebCore.Wke
     /// <param name="navigationType"></param>
     /// <param name="url"></param>
     /// <returns></returns>
-    public delegate bool OnNavigation(WebView view,
-        NavigationType navigationType,
-        string url);
+    public delegate bool OnNavigation(WebView view,NavigationType navigationType,string url);
 
     public enum PopMessageBoxType
     {

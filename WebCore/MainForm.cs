@@ -25,10 +25,20 @@ namespace WebCore
         {
             _view.ConselMessage += _view_ConselMessage;
             _view.PopMessageBox += _view_PopMessageBox;
-            _view.Load(@"test.html");
             _view.Dock = DockStyle.Fill;
+            _view.Load("test.html");
             _view.Visible = true;
             Controls.Add(_view);
+        }
+
+        private bool _view_Navigation(WebView view,NavigationType navigationType,string url)
+        {
+            if (navigationType == NavigationType.WKE_NAVIGATION_TYPE_LINKCLICK ||
+                navigationType == NavigationType.WKE_NAVIGATION_TYPE_OTHER)
+            {
+                return false;
+            }
+            return true;
         }
 
         private void _view_PopMessageBox(WebView view, PopMessageBoxType popMessageType, string message)

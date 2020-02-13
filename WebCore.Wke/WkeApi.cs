@@ -405,8 +405,11 @@ namespace WebCore.Wke
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern string wkeSetWindowTitle(IntPtr webWindow, string title);
 
-        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void wkeLoad(IntPtr webView, string url);
+
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void wkeLoadHTML(IntPtr webView, IntPtr html);
 
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern void wkeAddDirtyArea(IntPtr webView, int x, int y, int width, int height);

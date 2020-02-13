@@ -22,15 +22,15 @@ namespace WebCore.Wke
         /// </summary>
         public static Browser Current { get { return _browser; } }
 
+        public static event OnDownLoad DownLoad;
+
         public wkeJSCallAsFunctionCallback _loadLib = null;
 
         public wkeJSCallAsFunctionCallback _createObj = null;
 
         public wkeJSCallAsFunctionCallback _createComObj = null;
 
-        public wkeJSCallAsFunctionCallback _createControl = null;
-
-        public wkeJSCallAsFunctionCallback _changeControl = null;
+        public wkeJSCallAsFunctionCallback _downLoadURL = null;
 
         private wkeJSFinalizeCallback _disposed = null;
 
@@ -39,9 +39,27 @@ namespace WebCore.Wke
             _loadLib = new wkeJSCallAsFunctionCallback(OnLoadLib);
             _createObj = new wkeJSCallAsFunctionCallback(OnCreateObj);
             _createComObj = new wkeJSCallAsFunctionCallback(OnCreateComObj);
-            _createControl = new wkeJSCallAsFunctionCallback(OnCreateControl);
-            _changeControl = new wkeJSCallAsFunctionCallback(OnChangeControl);
+            _downLoadURL = new wkeJSCallAsFunctionCallback(OnDownLoadUrl);
             _disposed = new wkeJSFinalizeCallback(Disposed);
+        }
+
+        private long OnDownLoadUrl(IntPtr es, long obj, IntPtr args, int argCount)
+        {
+            if (argCount != 1)
+            {
+                return JSApi.wkeJSUndefined(es);
+            }
+            long url_Val = JSApi.wkeJSParam(es, 0);
+            if (!JSApi.wkeJSIsString(es, url_Val))
+            {
+                return JSApi.wkeJSUndefined(es);
+            }
+            string url= JSHelper.GetJsString(es, url_Val);
+            if (DownLoad != null)
+            {
+                DownLoad(url);
+            }
+            return JSApi.wkeJSTrue(es);
         }
 
         private long OnCreateComObj(IntPtr es, long obj, IntPtr args, int argCount)
@@ -90,15 +108,6 @@ namespace WebCore.Wke
             return localType;
         }
 
-        private long OnChangeControl(IntPtr es, long obj, IntPtr args, int argCount)
-        {
-            return 0;
-        }
-
-        private long OnCreateControl(IntPtr es, long obj, IntPtr args, int argCount)
-        {
-            return 0;
-        }
 
         private long OnCreateObj(IntPtr es, long obj, IntPtr args, int argCount)
         {
@@ -126,6 +135,8 @@ namespace WebCore.Wke
             return objRef.JsValue;
         }
 
+        private readonly HashSet<string> _libSet = new HashSet<string>();
+
         private long OnLoadLib(IntPtr es, long obj, IntPtr args, int argCount)
         {
             try
@@ -136,6 +147,13 @@ namespace WebCore.Wke
                     return JSApi.wkeJSFalse(es);
                 }
                 string libFile = JSHelper.GetJsString(es, p1);
+                lock (_libSet)
+                {
+                    if (_libSet.Contains(libFile))
+                    {
+                        return JSApi.wkeJSTrue(es);
+                    }
+                }
                 if (string.IsNullOrEmpty(libFile))
                 {
                     return JSApi.wkeJSFalse(es);
@@ -145,9 +163,17 @@ namespace WebCore.Wke
                 {
                     //若该程序集尚未加载，则执行加载
                     Assembly.LoadFile(libFile);
+                    lock (_libSet)
+                    {
+                        _libSet.Add(libFile);
+                    }
                     return JSApi.wkeJSTrue(es);
                 }
                 return JSApi.wkeJSTrue(es);
+            }
+            catch (Exception ex)
+            {
+                return JSApi.wkeJSUndefined(es);
             }
             finally
             {

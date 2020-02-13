@@ -13,8 +13,7 @@ namespace WebCore.Wke
             this.SetStyle(ControlStyles.UserPaint |
                 ControlStyles.OptimizedDoubleBuffer |
                 ControlStyles.AllPaintingInWmPaint |
-                ControlStyles.Selectable |
-                ControlStyles.Opaque, true);
+                ControlStyles.Selectable ,true);
         }
 
 
