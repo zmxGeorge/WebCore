@@ -149,8 +149,8 @@ namespace WebCore.Wke
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern  long wkeJSFalse(IntPtr es);
 
-        [DllImport("core/wke.dll", CharSet =CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        public static extern  long wkeJSString(IntPtr es, string str);
+        [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern  long wkeJSString(IntPtr es, IntPtr strPtr);
 
         [DllImport("core/wke.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern  long wkeJSEmptyObject(IntPtr es);

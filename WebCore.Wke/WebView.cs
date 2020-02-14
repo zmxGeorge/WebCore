@@ -85,6 +85,8 @@ namespace WebCore.Wke
             WkeApi.wkeSetUserAgent(_webView, userAgent);
         }
 
+        public IntPtr ViewHandle { get { return _webView; } }
+
         /// <summary>
         /// 获取JS上下文对象
         /// </summary>

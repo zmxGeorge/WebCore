@@ -7,6 +7,7 @@ using System.Reflection.Emit;
 using WebCore.Wke.JavaScript;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Windows.Forms;
 
 namespace WebCore.Wke.Csharp
 {
@@ -65,6 +66,7 @@ namespace WebCore.Wke.Csharp
         private static MethodInfo CallMethod = typeof(FunctionCreater).GetMethod("Call", BindingFlags.Static | BindingFlags.NonPublic);
 
         public static Delegate CreateJsFunctionCallBack(
+            IntPtr formPtr,
             IntPtr webView,
             string jsFunctionData,
             Type delType
@@ -97,6 +99,7 @@ namespace WebCore.Wke.Csharp
                 gen.Emit(OpCodes.Ldarg, i);
                 gen.Emit(OpCodes.Call, AddParmMethod.MakeGenericMethod(pType));
             }
+            gen.Emit(OpCodes.Ldc_I8, formPtr.ToInt64());
             gen.Emit(OpCodes.Ldc_I8, webView.ToInt64());
             gen.Emit(OpCodes.Ldc_I8, cancelPtr.ToInt64());
             gen.Emit(OpCodes.Ldstr, jsFunctionData);
@@ -144,44 +147,47 @@ namespace WebCore.Wke.Csharp
 
         private const string FUNCTION_ATTR = "webCoreCallFunction";
 
-        [MethodImpl(MethodImplOptions.Synchronized)]
         private static T Call<T>(
+            long formPtr,
             long i_webView,
             long cancelPtr,
             string jsFunction,
             FunctionParamterCollection paramterCollection)
         {
-            IntPtr webView = new IntPtr(i_webView);
-            var ptr = new IntPtr(cancelPtr);
-            try
-            {
-                var tag = Marshal.ReadByte(ptr);
-                if (tag == 1)
+            IntPtr wV = new IntPtr(i_webView);
+            Form form = Form.FromHandle(new IntPtr(formPtr)) as Form;
+            return (T)form.Invoke(new Func<IntPtr,T>(webView => {
+                var ptr = new IntPtr(cancelPtr);
+                try
                 {
-                    return default(T);
+                    var tag = Marshal.ReadByte(ptr);
+                    if (tag == 1)
+                    {
+                        return default(T);
+                    }
+                    var es = WkeApi.wkeGlobalExec(webView);
+                    var args = paramterCollection.ToJsValue(es);
+                    var script = string.Format(FUNCTION_CALL_FORMAT, jsFunction);
+                    var funV = JSApi.wkeJSEval(es, script);
+                    funV = JSApi.wkeJSGetGlobal(es, FUNCTION_ATTR);
+                    if (JSApi.wkeJSIsUndefined(es, funV))
+                    {
+                        return default(T);
+                    }
+                    long resV = JSApi.wkeJSCallGlobal(es, funV, args, args.Length);
+                    var obj = JSConvert.ConvertJSToObject(es, resV, typeof(T));
+                    if (obj == null)
+                    {
+                        return default(T);
+                    }
+                    return (T)obj;
                 }
-                var es = WkeApi.wkeGlobalExec(webView);
-                var args = paramterCollection.ToJsValue(es);
-                var script = string.Format(FUNCTION_CALL_FORMAT, jsFunction);
-                var funV = JSApi.wkeJSEval(es, script);
-                funV = JSApi.wkeJSGetGlobal(es, FUNCTION_ATTR);
-                if (JSApi.wkeJSIsUndefined(es, funV))
+                finally
                 {
-                    return default(T);
+                    Marshal.FreeHGlobal(ptr);
+                    JSGC.Current.Collect();
                 }
-                long resV = JSApi.wkeJSCallGlobal(es, funV, args, args.Length);
-                var obj = JSConvert.ConvertJSToObject(es, resV, typeof(T));
-                if (obj == null)
-                {
-                    return default(T);
-                }
-                return (T)obj;
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ptr);
-                JSGC.Current.Collect();
-            }
+            }), wV);
         }
     }
 }

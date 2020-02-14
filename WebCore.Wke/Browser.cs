@@ -270,7 +270,14 @@ namespace WebCore.Wke
 
         public void Application_Close()
         {
-            WkeApi.wkeFinalize();
+            try
+            {
+                WkeApi.wkeFinalize();
+            }
+            catch (Exception)
+            {
+                
+            }
         }
 
 

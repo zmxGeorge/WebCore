@@ -13,6 +13,9 @@ namespace WebCore
     public partial class WebForm : Form
     {
         private WebView _view = null;
+
+        public WebView WebView { get { return _view; } }
+
         public WebForm()
         {
             InitializeComponent();
@@ -62,7 +65,9 @@ namespace WebCore
             sbContent.AppendFormat("Level:{0}\r\n", level.ToString());
             sbContent.AppendFormat("LineNumber:{0}\r\n", lineNumber);
             sbContent.AppendFormat("URL:{0}\r\n", url);
+            sbContent.AppendFormat("Message:{0}\r\n", message);
             DCLogger.Current.WriteLog(LoggerLevel.Info, sbContent.ToString());
+            Console.WriteLine(sbContent);
         }
     }
 }

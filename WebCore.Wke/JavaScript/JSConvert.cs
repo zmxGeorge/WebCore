@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows.Forms;
 using WebCore.Wke.Csharp;
 
 namespace WebCore.Wke.JavaScript
@@ -55,7 +56,7 @@ namespace WebCore.Wke.JavaScript
             {
                 var jsData = JSHelper.GetJsString(es, v);
                 var webView = JSApi.wkeJSGetWebView(es);
-                return FunctionCreater.CreateJsFunctionCallBack(webView,
+                return FunctionCreater.CreateJsFunctionCallBack(Form.ActiveForm.Handle,webView,
                     jsData, objType);
             }
             else if (JSApi.wkeJSIsBool(es, v))
@@ -107,6 +108,9 @@ namespace WebCore.Wke.JavaScript
             return null;
         }
 
+        private const string DEF_TEMP_ARR = "window.TempArr=function(){return [];};";
+
+        private const string TEMPARRAY = "TempArr";
 
 
         /// <summary>
@@ -125,7 +129,9 @@ namespace WebCore.Wke.JavaScript
             var type = obj.GetType();
             if (type == typeof(byte[]))
             {
-                resIndex=JSApi.wkeJSString(es, Convert.ToBase64String((byte[])obj));
+                var strData =Encoding.UTF8.GetBytes(Convert.ToBase64String((byte[])obj));
+                var strPtr = Marshal.UnsafeAddrOfPinnedArrayElement(strData, 0);
+                resIndex =JSApi.wkeJSString(es, strPtr);
             }
             else if (type.IsSubclassOf(typeof(Array)))
             {
@@ -140,7 +146,9 @@ namespace WebCore.Wke.JavaScript
             }
             else if (type == typeof(string))
             {
-                resIndex = JSApi.wkeJSString(es, obj.ToString());
+                var strData = Encoding.UTF8.GetBytes(obj.ToString());
+                var strPtr = Marshal.UnsafeAddrOfPinnedArrayElement(strData, 0);
+                resIndex = JSApi.wkeJSString(es, strPtr);
             }
             else if (type == typeof(DateTime))
             {

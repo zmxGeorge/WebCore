@@ -34,8 +34,75 @@ function DownLoadWithURL(url) {
     _downLoadURL(url);
 }
 
+/**
+ * 创建设备对象
+ * @param {any} dc
+ * @param {any} categoryName
+ * @param {any} adapterName
+ * @param {any} deviceName
+ * @param {any} deviceInfo
+ */
+function CreateDevice(
+    dc,
+    categoryName, adapterName,
+    deviceName, deviceInfo) {
+    var req = {
+        CategoryName: categoryName,
+        AdapterName: adapterName,
+        DeviceName: deviceName,
+        DeviceInfo: deviceInfo,
+        NoUseCache: true
+    };
+    return dc.CreateDevice(JSON.stringify(req));
+}
+
+/**
+ * 执行设备对象中的接口
+ * @param {any} dc
+ * @param {any} deviceID
+ * @param {any} commandName
+ * @param {any} paramter
+ */
+function DeviceCommand(dc, deviceID, commandName, paramter) {
+    var paramters = [];
+    var index = 0;
+    for (var key in paramter) {
+        var value = paramter[key];
+        var obj = {};
+        obj.Name = key;
+        if (value == undefined) {
+            value = null;
+        }
+        if (typeof (value) == "function") {
+            obj.Value = parseInt(dc.CreateFunction(value));
+            obj.CallBackType = 1;
+        }
+        else {
+            obj.Value = value;
+            obj.CallBackType = 0;
+            obj.IsOut = true;
+        }
+        paramters[index] = obj;
+        index++;
+    }
+    var req = {
+        Handle: deviceID,
+        CommandName: commandName,
+        Paramters: paramters
+    };
+    var resStr = dc.DoCommand(JSON.stringify(req));
+    if (resStr == null || resStr == undefined) {
+        //如果调用失败则返回undefined
+        return undefined;
+    }
+    //如果调用成功字符串转换成js对象
+    return JSON.parse(resStr);
+}
+
 
 $(document).ready(function () {
+    window._loadAssembly("Newtonsoft.Json.dll");
+    window._loadAssembly("DeviceLib.dll");
     /*
       * 所有属性download="true"的a标签都会开启下载器
     */
