@@ -37,6 +37,12 @@ namespace WebCore.Wke
 
         private long _funDownLoad = 0;
 
+        private long _funGetProcessId = 0;
+
+        private long _funOpenNewWindow = 0;
+
+        private long _funAppExit = 0;
+
         private wkeJSCallAsFunctionCallback _createControl = null;
 
         private wkeJSCallAsFunctionCallback _changeControl = null;
@@ -53,21 +59,30 @@ namespace WebCore.Wke
             _funLoadLibrary = JSApi.JsCreateFunction(es, Browser.Current._loadLib);
             _funCreateObject = JSApi.JsCreateFunction(es, Browser.Current._createObj);
             _funCreateComObject= JSApi.JsCreateFunction(es, Browser.Current._createComObj);
-            _funCreateControl= JSApi.JsCreateFunction(es, _createControl);
+            _funGetProcessId = JSApi.JsCreateFunction(es, Browser.Current._getCurrentProcessId);
+            _funOpenNewWindow = JSApi.JsCreateFunction(es, Browser.Current._openNewWindow);
+            _funCreateControl = JSApi.JsCreateFunction(es, _createControl);
             _funChangeControl= JSApi.JsCreateFunction(es, _changeControl);
             _funDownLoad= JSApi.JsCreateFunction(es, Browser.Current._downLoadURL);
+            _funAppExit = JSApi.JsCreateFunction(es, Browser.Current._applicationExit);
             JSApi.wkeJSAddRef(es, _funLoadLibrary);
             JSApi.wkeJSAddRef(es, _funCreateObject);
             JSApi.wkeJSAddRef(es, _funCreateComObject);
             JSApi.wkeJSAddRef(es, _funCreateControl);
             JSApi.wkeJSAddRef(es, _funChangeControl);
             JSApi.wkeJSAddRef(es, _funDownLoad);
+            JSApi.wkeJSAddRef(es, _funGetProcessId);
+            JSApi.wkeJSAddRef(es, _funOpenNewWindow);
+            JSApi.wkeJSAddRef(es, _funAppExit);
             JSApi.wkeJSSetGlobal(es, "_loadAssembly", _funLoadLibrary);
             JSApi.wkeJSSetGlobal(es, "_createObject", _funCreateObject);
             JSApi.wkeJSSetGlobal(es, "_createComObject", _funCreateComObject);
             JSApi.wkeJSSetGlobal(es, "_createControl", _funCreateControl);
             JSApi.wkeJSSetGlobal(es, "_changeControl", _funChangeControl);
+            JSApi.wkeJSSetGlobal(es, "_getCurrentProcessId", _funGetProcessId);
+            JSApi.wkeJSSetGlobal(es, "_openNewWindow", _funOpenNewWindow);
             JSApi.wkeJSSetGlobal(es, "_downLoadURL", _funDownLoad);
+            JSApi.wkeJSSetGlobal(es, "_appExit", _funAppExit);
         }
 
         private long ChangeControl(IntPtr es, long obj, IntPtr args, int argCount)
@@ -169,6 +184,9 @@ namespace WebCore.Wke
             JSApi.wkeJSReleaseRef(es, _funCreateControl);
             JSApi.wkeJSReleaseRef(es, _funChangeControl);
             JSApi.wkeJSReleaseRef(es, _funDownLoad);
+            JSApi.wkeJSReleaseRef(es, _funGetProcessId);
+            JSApi.wkeJSReleaseRef(es, _funOpenNewWindow);
+            JSApi.wkeJSReleaseRef(es, _funAppExit);
             JSApi.wkeJSCollectGarbge();
         }
 

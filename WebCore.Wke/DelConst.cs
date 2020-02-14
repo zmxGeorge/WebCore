@@ -15,6 +15,8 @@ namespace WebCore.Wke
 
     public delegate void OnDownLoad(string url);
 
+    public delegate void OnOpenNewWindow(string url,string title,int x,int y,int width,int height);
+
     public enum NavigationType
     {
         WKE_NAVIGATION_TYPE_LINKCLICK,

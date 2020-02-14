@@ -8,6 +8,8 @@ using Microsoft.Win32.SafeHandles;
 using System.Reflection;
 using WebCore.Wke.JavaScript;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Windows.Forms;
 
 namespace WebCore.Wke
 {
@@ -24,6 +26,8 @@ namespace WebCore.Wke
 
         public static event OnDownLoad DownLoad;
 
+        public static event OnOpenNewWindow OpenNewWindow;
+
         public wkeJSCallAsFunctionCallback _loadLib = null;
 
         public wkeJSCallAsFunctionCallback _createObj = null;
@@ -31,6 +35,12 @@ namespace WebCore.Wke
         public wkeJSCallAsFunctionCallback _createComObj = null;
 
         public wkeJSCallAsFunctionCallback _downLoadURL = null;
+
+        public wkeJSCallAsFunctionCallback _applicationExit = null;
+
+        public wkeJSCallAsFunctionCallback _openNewWindow = null;
+
+        public wkeJSCallAsFunctionCallback _getCurrentProcessId = null;
 
         private wkeJSFinalizeCallback _disposed = null;
 
@@ -40,7 +50,65 @@ namespace WebCore.Wke
             _createObj = new wkeJSCallAsFunctionCallback(OnCreateObj);
             _createComObj = new wkeJSCallAsFunctionCallback(OnCreateComObj);
             _downLoadURL = new wkeJSCallAsFunctionCallback(OnDownLoadUrl);
+            _openNewWindow = new wkeJSCallAsFunctionCallback(OnOpenNewWindow);
+            _getCurrentProcessId = new wkeJSCallAsFunctionCallback(OnCurrentProcessId);
             _disposed = new wkeJSFinalizeCallback(Disposed);
+            _applicationExit = new wkeJSCallAsFunctionCallback(ApplicationExit);
+        }
+
+        private long ApplicationExit(IntPtr es, long obj, IntPtr args, int argCount)
+        {
+            Application.Exit();
+            return JSApi.wkeJSTrue(es);
+        }
+
+        private long OnCurrentProcessId(IntPtr es, long obj, IntPtr args, int argCount)
+        {
+            using (Process pro = Process.GetCurrentProcess())
+            {
+                return JSApi.wkeJSInt(es, pro.Id);
+            }
+        }
+
+        private long OnOpenNewWindow(IntPtr es, long obj, IntPtr args, int argCount)
+        {
+            if (argCount != 6)
+            {
+                return JSApi.wkeJSUndefined(es);
+            }
+            long url_Val = JSApi.wkeJSParam(es, 0);
+            if (!JSApi.wkeJSIsString(es, url_Val))
+            {
+                return JSApi.wkeJSUndefined(es);
+            }
+            string url = JSHelper.GetJsString(es, url_Val);
+            long title_Val = JSApi.wkeJSParam(es, 1);
+            if (!JSApi.wkeJSIsString(es, title_Val))
+            {
+                return JSApi.wkeJSUndefined(es);
+            }
+            string title = JSHelper.GetJsString(es, title_Val);
+            var vX = JSApi.wkeJSParam(es, 2);
+            var vY = JSApi.wkeJSParam(es, 3);
+            var vWidth = JSApi.wkeJSParam(es, 4);
+            var vHeight = JSApi.wkeJSParam(es, 5);
+            int x, y, width, height = 0;
+            if (!JSApi.wkeJSIsNumber(es, vX) ||
+               !JSApi.wkeJSIsNumber(es, vY) ||
+               !JSApi.wkeJSIsNumber(es, vWidth) ||
+               !JSApi.wkeJSIsNumber(es, vHeight))
+            {
+                return JSApi.wkeJSUndefined(es);
+            }
+            x = JSApi.wkeJSToInt(es, vX);
+            y = JSApi.wkeJSToInt(es, vY);
+            width = JSApi.wkeJSToInt(es, vWidth);
+            height = JSApi.wkeJSToInt(es, vHeight);
+            if (OpenNewWindow != null)
+            {
+                OpenNewWindow(url,title,x,y,width,height);
+            }
+            return JSApi.wkeJSTrue(es);
         }
 
         private long OnDownLoadUrl(IntPtr es, long obj, IntPtr args, int argCount)
