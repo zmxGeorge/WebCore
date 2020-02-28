@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
-using WebCore.Wke;
 using System.Configuration;
 using System.IO;
+using System.Text;
+using WebCore.Miniblink;
 
 namespace WebCore
 {
@@ -19,16 +19,16 @@ namespace WebCore
         [STAThread]
         static void Main()
         {
+            Application.ApplicationExit += Application_ApplicationExit;
+            Application.ThreadException += Application_ThreadException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             DCLogger.Current.Init();
-            Browser.DownLoad += Browser_DownLoad;
-            Browser.OpenNewWindow += Browser_OpenNewWindow;
-            Browser.Current.Application_Init();
+            Browser.Current.Init();
             WebForm form = new WebForm();
             Screen mainScreen = Screen.PrimaryScreen;
             string localUrl = ConfigurationManager.AppSettings["localUrl"];
-            string localTitle = ConfigurationManager.AppSettings["localTitle"];
             string iconPath = ConfigurationManager.AppSettings["icon"];
             FileInfo finfo = new FileInfo(iconPath);
             finfo.Refresh();
@@ -36,23 +36,38 @@ namespace WebCore
             {
                 _icon = new Icon(iconPath);
             }
-            var rect = mainScreen.Bounds;
-            form.Init(localUrl, localTitle, FormWindowState.Maximized,_icon,
-                rect.X, rect.Y, rect.Width, rect.Height);
+            var rect = mainScreen.WorkingArea;
+            form.Init(localUrl, string.Empty, FormWindowState.Maximized,_icon,
+                rect.X, rect.Y, 0,0);
+            Application.AddMessageFilter(new WebMessageFilter());
             Application.Run(form);
-            Browser.Current.Application_Close();
-        }
-
-        private static void Browser_OpenNewWindow(string url, string title, int x, int y, int width, int height)
-        {
-            WebForm form = new WebForm();
-            form.Init(url,title,FormWindowState.Normal, _icon, x, y, width, height);
-            form.Show();
-        }
-
-        private static void Browser_DownLoad(string url)
-        {
             
+            //Browser.Current.Application_Close();
         }
+
+        private static void Application_ApplicationExit(object sender, EventArgs e)
+        {
+            Browser.Current.Close();
+        }
+
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            if (e.ExceptionObject != null)
+            {
+                DCLogger.Current.WriteLog(LoggerLevel.Exception, e.ExceptionObject.ToString());
+                Browser.Current.Close();
+            }
+        }
+
+        private static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
+        {
+            if (e.Exception == null)
+            {
+                return;
+            }
+            DCLogger.Current.WriteLog(LoggerLevel.Exception, e.Exception.ToString());
+        }
+
+
     }
 }

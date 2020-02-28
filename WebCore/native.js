@@ -15,6 +15,23 @@
     return _createControl(left, top, width, height);
 }
 
+function CreateControlWithDispose(e,disposeFun) {
+    var p = e;
+    var top = 0;
+    var left = 0;
+    var width = e.clientWidth;
+    var height = e.clientHeight;
+    if (width <= 0 || height <= 0) {
+        return undefineds;
+    }
+    while (p != null && p != undefined) {
+        top += p.offsetTop;
+        left += p.offsetLeft;
+        p = p.offsetParent;
+    }
+    return _createControl(left, top, width, height, disposeFun);
+}
+
 /*
  * 这里的e为Jq对象
  */
@@ -34,7 +51,7 @@ function DownLoadWithURL(url) {
     _downLoadURL(url);
 }
 
-/**
+/*
  * 创建设备对象
  * @param {any} dc
  * @param {any} categoryName
@@ -103,14 +120,6 @@ function DeviceCommand(dc, deviceID, commandName, paramter) {
 $(document).ready(function () {
     window._loadAssembly("Newtonsoft.Json.dll");
     window._loadAssembly("DeviceLib.dll");
-    /*
-      * 所有属性download="true"的a标签都会开启下载器
-    */
-    $("a[download=\"true\"]").click(function (e) {
-        e.preventDefault();
-        var url = $(this).attr("href");
-        DownLoadWithURL(url);
-    });
     /*
      * 所有属性control="true"的元素，会在这个元素位置创建控件
      */
